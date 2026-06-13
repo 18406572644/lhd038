@@ -24,7 +24,7 @@ export default function ExportPanel({
   const isComplete = downloadUrl !== null;
   const formatLabel = format === 'video' ? '视频' : 'GIF';
   const accentColor = format === 'video' ? ELECTRIC_BLUE : NEON_PINK;
-  const ext = format === 'video' ? 'webm' : 'webm';
+  const ext = format === 'video' ? 'webm' : 'gif';
 
   const handleDownload = () => {
     if (!downloadUrl) return;

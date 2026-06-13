@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { useTimelineStore } from '@/store/useTimelineStore';
+import GIF from 'gif.js';
 
 function findMainCanvas(): HTMLCanvasElement | null {
   return document.querySelector('canvas[data-city-canvas]') || document.querySelector('canvas');
@@ -45,13 +46,15 @@ export function useExport(canvasRefArg?: React.RefObject<HTMLCanvasElement>) {
     };
 
     return new Promise<string>((resolve, reject) => {
+      let isCompleted = false;
+
       mediaRecorder.onstop = () => {
         const mimeType = getSupportedMimeType();
         const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
+        setProgress(100);
         setIsExporting(false);
         isExportingRef.current = false;
-        setProgress(100);
         resolve(url);
       };
 
@@ -66,27 +69,31 @@ export function useExport(canvasRefArg?: React.RefObject<HTMLCanvasElement>) {
       play();
 
       const progressInterval = setInterval(() => {
-        if (!isExportingRef.current) {
+        if (!isExportingRef.current || isCompleted) {
           clearInterval(progressInterval);
           return;
         }
         const { currentTime } = useTimelineStore.getState();
-        const pct = Math.min((currentTime / duration) * 100, 100);
+        const pct = Math.min((currentTime / duration) * 100, 99.9);
         setProgress(pct);
       }, 100);
 
       const checkDone = setInterval(() => {
-        if (!isExportingRef.current) {
+        if (!isExportingRef.current || isCompleted) {
           clearInterval(checkDone);
           clearInterval(progressInterval);
           return;
         }
         const { currentTime } = useTimelineStore.getState();
         if (currentTime >= duration) {
+          isCompleted = true;
           clearInterval(checkDone);
           clearInterval(progressInterval);
+          setProgress(100);
           pause();
-          mediaRecorder.stop();
+          setTimeout(() => {
+            mediaRecorder.stop();
+          }, 200);
         }
       }, 50);
     });
@@ -100,70 +107,79 @@ export function useExport(canvasRefArg?: React.RefObject<HTMLCanvasElement>) {
     const duration = timeline.duration;
     const fps = 15;
     const totalFrames = Math.floor(duration * fps);
+    const delay = Math.round(1000 / fps);
 
     setIsExporting(true);
     isExportingRef.current = true;
     setProgress(0);
 
     pause();
-
-    const stream = canvas.captureStream(fps);
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: getSupportedMimeType(),
-      videoBitsPerSecond: 1500000,
-    });
-
-    const chunks: Blob[] = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunks.push(e.data);
-      }
-    };
+    setCurrentTime(0);
 
     return new Promise<string>((resolve, reject) => {
-      mediaRecorder.onstop = () => {
-        const mimeType = getSupportedMimeType();
-        const blob = new Blob(chunks, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        setIsExporting(false);
-        isExportingRef.current = false;
-        setProgress(100);
-        resolve(url);
-      };
-
-      mediaRecorder.onerror = () => {
-        setIsExporting(false);
-        isExportingRef.current = false;
-        setProgress(0);
-        reject(new Error('MediaRecorder error'));
-      };
-
-      mediaRecorder.start(100);
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        workerScript: '/gif.worker.js',
+        width: canvas.width,
+        height: canvas.height,
+      });
 
       let frameIndex = 0;
+      let isCancelled = false;
 
-      const advanceFrame = () => {
-        if (!isExportingRef.current) return;
+      const checkCancelled = () => !isExportingRef.current || isCancelled;
+
+      const addNextFrame = () => {
+        if (checkCancelled()) {
+          gif.abort();
+          setIsExporting(false);
+          setProgress(0);
+          reject(new Error('Export cancelled'));
+          return;
+        }
 
         if (frameIndex >= totalFrames) {
-          mediaRecorder.stop();
-          pause();
+          setProgress(90);
+          gif.on('finished', (blob: Blob) => {
+            const url = URL.createObjectURL(blob);
+            setProgress(100);
+            setIsExporting(false);
+            isExportingRef.current = false;
+            resolve(url);
+          });
+          gif.render();
           return;
         }
 
         setCurrentTime(frameIndex / fps);
-        setProgress(Math.min((frameIndex / totalFrames) * 100, 100));
-        frameIndex++;
-        setTimeout(advanceFrame, 1000 / fps);
+        setProgress(Math.min((frameIndex / totalFrames) * 85, 85));
+
+        setTimeout(() => {
+          try {
+            gif.addFrame(canvas, { delay, copy: true });
+            frameIndex++;
+            requestAnimationFrame(addNextFrame);
+          } catch (e) {
+            setIsExporting(false);
+            isExportingRef.current = false;
+            setProgress(0);
+            reject(e);
+          }
+        }, 16);
       };
 
-      setCurrentTime(0);
-      setTimeout(advanceFrame, 100);
+      setTimeout(addNextFrame, 200);
     });
   }, [getCanvas]);
 
-  return { exportVideo, exportGif, isExporting, progress };
+  const cancelExport = useCallback(() => {
+    isExportingRef.current = false;
+    setIsExporting(false);
+    setProgress(0);
+  }, []);
+
+  return { exportVideo, exportGif, cancelExport, isExporting, progress };
 }
 
 function getSupportedMimeType(): string {

@@ -41,7 +41,7 @@ export default function Workbench() {
   const setDuration = useTimelineStore((s) => s.setDuration);
   const stop = useTimelineStore((s) => s.stop);
 
-  const { exportVideo, exportGif, isExporting, progress } = useExport();
+  const { exportVideo, exportGif, cancelExport, isExporting, progress } = useExport();
   const [exportFormat, setExportFormat] = useState<'video' | 'gif' | null>(null);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
 
@@ -485,6 +485,7 @@ export default function Workbench() {
           setExportUrl(null);
         }}
         onCancel={() => {
+          cancelExport();
           setExportFormat(null);
           setExportUrl(null);
         }}

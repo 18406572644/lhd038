@@ -33,7 +33,7 @@ export default function PreviewModal({ opened, onClose }: PreviewModalProps) {
 
   const { startRendering, stopRendering } = useCanvasRenderer(canvasRef);
   const { startPlayback, stopPlayback, seekTo } = useAnimation();
-  const { exportVideo, exportGif, isExporting, progress } = useExport(canvasRef);
+  const { exportVideo, exportGif, cancelExport, isExporting, progress } = useExport(canvasRef);
 
   const currentTime = useTimelineStore((s) => s.currentTime);
   const isPlaying = useTimelineStore((s) => s.isPlaying);
@@ -165,6 +165,7 @@ export default function PreviewModal({ opened, onClose }: PreviewModalProps) {
   };
 
   const handleExportCancel = () => {
+    cancelExport();
     setExportFormat(null);
     setDownloadUrl(null);
   };

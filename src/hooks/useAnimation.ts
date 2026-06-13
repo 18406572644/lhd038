@@ -6,7 +6,7 @@ export function useAnimation() {
   const lastTimestampRef = useRef<number>(0);
 
   const tick = useCallback((timestamp: number) => {
-    const { isPlaying, timeline, playbackSpeed, setCurrentTime } =
+    const { isPlaying, timeline, playbackSpeed, setCurrentTime, pause } =
       useTimelineStore.getState();
 
     if (!isPlaying) return;
@@ -22,12 +22,12 @@ export function useAnimation() {
     const nextTime = currentTime + delta * playbackSpeed;
 
     if (nextTime >= timeline.duration) {
-      setCurrentTime(nextTime % timeline.duration);
+      setCurrentTime(timeline.duration);
+      pause();
     } else {
       setCurrentTime(nextTime);
+      frameIdRef.current = requestAnimationFrame(tick);
     }
-
-    frameIdRef.current = requestAnimationFrame(tick);
   }, []);
 
   const startPlayback = useCallback(() => {

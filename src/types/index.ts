@@ -11,6 +11,16 @@ export interface Building {
   height: number;
   windowDensity: number;
   windowPattern: WindowPattern;
+  groupId?: string;
+}
+
+export interface BuildingGroup {
+  id: string;
+  name: string;
+  childBuildingIds: string[];
+  pivotX: number;
+  pivotY: number;
+  locked: boolean;
 }
 
 export interface LightConfig {
@@ -35,7 +45,8 @@ export interface Keyframe {
 
 export interface TimelineTrack {
   id: string;
-  buildingId: string;
+  buildingId?: string;
+  groupId?: string;
   lightId: string;
   label: string;
   keyframes: Keyframe[];
@@ -53,6 +64,7 @@ export interface LightShowTemplate {
   thumbnail: string;
   tags: string[];
   buildings: Building[];
+  groups: BuildingGroup[];
   lights: LightConfig[];
   timeline: TimelineData;
   createdAt: string;
@@ -62,6 +74,7 @@ export interface UserDesign {
   id: string;
   name: string;
   buildings: Building[];
+  groups: BuildingGroup[];
   lights: LightConfig[];
   timeline: TimelineData;
   updatedAt: string;

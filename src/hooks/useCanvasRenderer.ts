@@ -9,6 +9,9 @@ import {
   drawBuilding,
   drawGroundLine,
   getRainbowColor,
+  drawGroupBoundingBox,
+  drawBoxSelection,
+  drawMultiSelectionHighlight,
 } from '@/utils/canvas';
 
 export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>) {
@@ -20,8 +23,16 @@ export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>)
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const { buildings, lights, selectedBuildingId } = useDesignStore.getState();
-    const { zoom, panX, panY, canvasWidth, canvasHeight, groundY } = useCanvasStore.getState();
+    const {
+      buildings,
+      groups,
+      lights,
+      selectedBuildingId,
+      selectedBuildingIds,
+      selectedGroupId,
+      activeGroupId,
+    } = useDesignStore.getState();
+    const { zoom, panX, panY, canvasWidth, canvasHeight, groundY, boxSelection } = useCanvasStore.getState();
     const { currentTime } = useTimelineStore.getState();
 
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -35,9 +46,15 @@ export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>)
     drawStars(ctx, canvasWidth, canvasHeight);
     drawGrid(ctx, canvasWidth, canvasHeight);
 
+    const multiSelectedSet = new Set(selectedBuildingIds);
+
     for (const building of buildings) {
+      if (activeGroupId && building.groupId !== activeGroupId) continue;
+      if (!activeGroupId && building.groupId) continue;
+
       const light = lights.find((l) => l.buildingId === building.id);
       const isSelected = building.id === selectedBuildingId;
+      const isMultiSelected = multiSelectedSet.has(building.id);
       const lightColor =
         light && light.animation === 'rainbow'
           ? getRainbowColor(currentTime, light.speed, light.delay)
@@ -46,13 +63,43 @@ export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>)
       drawBuilding(
         ctx,
         building,
-        isSelected,
+        isSelected || isMultiSelected,
         currentTime,
         lightColor,
         light?.intensity ?? 0.8,
         light?.animation ?? 'breathe',
         light?.speed ?? 1,
         light?.delay ?? 0
+      );
+
+      if (isMultiSelected && !isSelected) {
+        drawMultiSelectionHighlight(ctx, building);
+      }
+    }
+
+    if (!activeGroupId) {
+      for (const group of groups) {
+        const isSelected = group.id === selectedGroupId;
+        const isEditMode = group.id === activeGroupId;
+        drawGroupBoundingBox(ctx, group, buildings, isSelected, isEditMode);
+      }
+    }
+
+    if (activeGroupId) {
+      const activeGroup = groups.find((g) => g.id === activeGroupId);
+      if (activeGroup) {
+        drawGroupBoundingBox(ctx, activeGroup, buildings, true, true);
+      }
+    }
+
+    if (boxSelection.active) {
+      const offsetY = groundY - 500;
+      drawBoxSelection(
+        ctx,
+        boxSelection.startX,
+        boxSelection.startY - offsetY,
+        boxSelection.endX,
+        boxSelection.endY - offsetY
       );
     }
 

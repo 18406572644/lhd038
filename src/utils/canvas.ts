@@ -1,4 +1,4 @@
-import { Building, WindowPattern } from '@/types';
+import { Building, BuildingGroup, WindowPattern } from '@/types';
 import { hexToRgb, withAlpha } from './colors';
 
 export function drawGrid(
@@ -220,4 +220,168 @@ export function isPointInBuilding(
     py >= building.y &&
     py <= building.y + building.height
   );
+}
+
+export function isBuildingInBox(
+  building: Building,
+  boxStartX: number,
+  boxStartY: number,
+  boxEndX: number,
+  boxEndY: number
+): boolean {
+  const minX = Math.min(boxStartX, boxEndX);
+  const maxX = Math.max(boxStartX, boxEndX);
+  const minY = Math.min(boxStartY, boxEndY);
+  const maxY = Math.max(boxStartY, boxEndY);
+
+  return (
+    building.x >= minX &&
+    building.x + building.width <= maxX &&
+    building.y >= minY &&
+    building.y + building.height <= maxY
+  );
+}
+
+export function isPointInGroup(
+  px: number,
+  py: number,
+  group: BuildingGroup,
+  buildings: Building[]
+): boolean {
+  const groupBuildings = buildings.filter((b) => group.childBuildingIds.includes(b.id));
+  if (groupBuildings.length === 0) return false;
+
+  const minX = Math.min(...groupBuildings.map((b) => b.x));
+  const maxX = Math.max(...groupBuildings.map((b) => b.x + b.width));
+  const minY = Math.min(...groupBuildings.map((b) => b.y));
+  const maxY = Math.max(...groupBuildings.map((b) => b.y + b.height));
+
+  return px >= minX && px <= maxX && py >= minY && py <= maxY;
+}
+
+export function getGroupBounds(
+  group: BuildingGroup,
+  buildings: Building[]
+): { minX: number; maxX: number; minY: number; maxY: number } {
+  const groupBuildings = buildings.filter((b) => group.childBuildingIds.includes(b.id));
+  if (groupBuildings.length === 0) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+  }
+
+  return {
+    minX: Math.min(...groupBuildings.map((b) => b.x)),
+    maxX: Math.max(...groupBuildings.map((b) => b.x + b.width)),
+    minY: Math.min(...groupBuildings.map((b) => b.y)),
+    maxY: Math.max(...groupBuildings.map((b) => b.y + b.height)),
+  };
+}
+
+export function drawGroupBoundingBox(
+  ctx: CanvasRenderingContext2D,
+  group: BuildingGroup,
+  buildings: Building[],
+  isSelected: boolean,
+  isEditMode: boolean
+) {
+  const bounds = getGroupBounds(group, buildings);
+  const { minX, maxX, minY, maxY } = bounds;
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  ctx.save();
+
+  const color = isEditMode ? '#FFE600' : isSelected ? '#00F0FF' : 'rgba(0, 240, 255, 0.3)';
+  const dashPattern = isEditMode ? [5, 5] : isSelected ? [] : [3, 3];
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = isSelected || isEditMode ? 2 : 1;
+  ctx.setLineDash(dashPattern);
+
+  ctx.strokeRect(minX - 4, minY - 4, width + 8, height + 8);
+
+  if (isSelected || isEditMode) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.strokeRect(minX - 4, minY - 4, width + 8, height + 8);
+    ctx.shadowBlur = 0;
+
+    const handleSize = 8;
+    const handles = [
+      { x: minX - 4, y: minY - 4 },
+      { x: maxX - 4, y: minY - 4 },
+      { x: minX - 4, y: maxY - 4 },
+      { x: maxX - 4, y: maxY - 4 },
+    ];
+
+    ctx.fillStyle = '#1A1A28';
+    ctx.strokeStyle = color;
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+
+    for (const handle of handles) {
+      ctx.fillRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+      ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+    }
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(group.pivotX, group.pivotY, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.setLineDash([]);
+
+  if (!isEditMode) {
+    const label = group.name;
+    ctx.font = '12px Rajdhani, sans-serif';
+    const labelWidth = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(26, 26, 40, 0.9)';
+    ctx.fillRect(minX, minY - 22, labelWidth + 10, 18);
+    ctx.fillStyle = color;
+    ctx.fillText(label, minX + 5, minY - 9);
+  }
+
+  ctx.restore();
+}
+
+export function drawBoxSelection(
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+) {
+  const minX = Math.min(startX, endX);
+  const maxX = Math.max(startX, endX);
+  const minY = Math.min(startY, endY);
+  const maxY = Math.max(startY, endY);
+
+  ctx.save();
+
+  ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
+  ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+export function drawMultiSelectionHighlight(
+  ctx: CanvasRenderingContext2D,
+  building: Building
+) {
+  ctx.save();
+
+  ctx.strokeStyle = '#FFE600';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#FFE600';
+  ctx.shadowBlur = 8;
+  ctx.strokeRect(building.x, building.y, building.width, building.height);
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
 }

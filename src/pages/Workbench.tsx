@@ -30,6 +30,7 @@ export default function Workbench() {
   const designId = useDesignStore((s) => s.designId);
   const designName = useDesignStore((s) => s.designName);
   const buildings = useDesignStore((s) => s.buildings);
+  const groups = useDesignStore((s) => s.groups);
   const lights = useDesignStore((s) => s.lights);
   const loadDesign = useDesignStore((s) => s.loadDesign);
   const setDesignName = useDesignStore((s) => s.setDesignName);
@@ -52,6 +53,7 @@ export default function Workbench() {
         id: tpl.id,
         name: tpl.name,
         buildings: tpl.buildings,
+        groups: tpl.groups,
         lights: tpl.lights,
         timeline: tpl.timeline,
         updatedAt: tpl.createdAt,
@@ -89,6 +91,7 @@ export default function Workbench() {
       id: designId,
       name: saveName.trim(),
       buildings,
+      groups,
       lights,
       timeline,
       updatedAt: now,

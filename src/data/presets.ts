@@ -8,14 +8,18 @@ export const presetTemplates: LightShowTemplate[] = [
     thumbnail: '',
     tags: ['都市', '商业区', '摩天楼', '霓虹'],
     buildings: [
-      { id: 'b1', type: 'tower', x: 40, y: 120, width: 80, height: 380, windowDensity: 85, windowPattern: 'grid' },
-      { id: 'b2', type: 'office', x: 140, y: 180, width: 100, height: 320, windowDensity: 75, windowPattern: 'grid' },
-      { id: 'b3', type: 'tower', x: 260, y: 80, width: 70, height: 420, windowDensity: 90, windowPattern: 'random' },
+      { id: 'b1', type: 'tower', x: 40, y: 120, width: 80, height: 380, windowDensity: 85, windowPattern: 'grid', groupId: 'g1' },
+      { id: 'b2', type: 'office', x: 140, y: 180, width: 100, height: 320, windowDensity: 75, windowPattern: 'grid', groupId: 'g1' },
+      { id: 'b3', type: 'tower', x: 260, y: 80, width: 70, height: 420, windowDensity: 90, windowPattern: 'random', groupId: 'g1' },
       { id: 'b4', type: 'office', x: 350, y: 200, width: 120, height: 300, windowDensity: 70, windowPattern: 'grid' },
-      { id: 'b5', type: 'tower', x: 490, y: 140, width: 90, height: 360, windowDensity: 80, windowPattern: 'strip' },
+      { id: 'b5', type: 'tower', x: 490, y: 140, width: 90, height: 360, windowDensity: 80, windowPattern: 'strip', groupId: 'g2' },
       { id: 'b6', type: 'office', x: 600, y: 220, width: 110, height: 280, windowDensity: 65, windowPattern: 'random' },
-      { id: 'b7', type: 'tower', x: 730, y: 100, width: 75, height: 400, windowDensity: 88, windowPattern: 'grid' },
+      { id: 'b7', type: 'tower', x: 730, y: 100, width: 75, height: 400, windowDensity: 88, windowPattern: 'grid', groupId: 'g2' },
       { id: 'b8', type: 'office', x: 820, y: 250, width: 130, height: 250, windowDensity: 60, windowPattern: 'strip' },
+    ],
+    groups: [
+      { id: 'g1', name: '西区塔楼群', childBuildingIds: ['b1', 'b2', 'b3'], pivotX: 170, pivotY: 330, locked: false },
+      { id: 'g2', name: '东区双子塔', childBuildingIds: ['b5', 'b7'], pivotX: 610, pivotY: 330, locked: false },
     ],
     lights: [
       { id: 'l1', buildingId: 'b1', color: '#FF2E97', animation: 'breathe', speed: 1.2, intensity: 0.9, delay: 0 },
@@ -30,31 +34,29 @@ export const presetTemplates: LightShowTemplate[] = [
     timeline: {
       duration: 16,
       tracks: [
-        { id: 't1', buildingId: 'b1', lightId: 'l1', label: '主塔', keyframes: [
+        { id: 't1', groupId: 'g1', lightId: 'l1', label: '西区塔楼群', keyframes: [
           { id: 'k1', startTime: 0, endTime: 4, color: '#FF2E97', animation: 'breathe', speed: 1.2, intensity: 0.9 },
           { id: 'k2', startTime: 4, endTime: 8, color: '#FF2E97', animation: 'chase', speed: 1.5, intensity: 1.0 },
           { id: 'k3', startTime: 8, endTime: 12, color: '#00F0FF', animation: 'gradient', speed: 0.8, intensity: 0.85 },
           { id: 'k4', startTime: 12, endTime: 16, color: '#FF2E97', animation: 'breathe', speed: 1.2, intensity: 0.9 },
         ]},
-        { id: 't2', buildingId: 'b2', lightId: 'l2', label: '商务楼A', keyframes: [
+        { id: 't2', buildingId: 'b4', lightId: 'l4', label: '商务楼A', keyframes: [
           { id: 'k5', startTime: 0, endTime: 5, color: '#00F0FF', animation: 'chase', speed: 0.8, intensity: 0.85 },
           { id: 'k6', startTime: 5, endTime: 10, color: '#FFE600', animation: 'breathe', speed: 1.0, intensity: 0.7 },
           { id: 'k7', startTime: 10, endTime: 16, color: '#00F0FF', animation: 'chase', speed: 0.8, intensity: 0.85 },
         ]},
-        { id: 't3', buildingId: 'b3', lightId: 'l3', label: '中心塔', keyframes: [
+        { id: 't3', groupId: 'g2', lightId: 'l5', label: '东区双子塔', keyframes: [
           { id: 'k8', startTime: 0, endTime: 6, color: '#FF2E97', animation: 'gradient', speed: 1.0, intensity: 0.95 },
           { id: 'k9', startTime: 6, endTime: 11, color: '#BF40FF', animation: 'rainbow', speed: 1.2, intensity: 0.9 },
           { id: 'k10', startTime: 11, endTime: 16, color: '#FF2E97', animation: 'gradient', speed: 1.0, intensity: 0.95 },
         ]},
-        { id: 't4', buildingId: 'b5', lightId: 'l5', label: '霓虹塔', keyframes: [
-          { id: 'k11', startTime: 0, endTime: 4, color: '#00F0FF', animation: 'rainbow', speed: 1.5, intensity: 0.9 },
-          { id: 'k12', startTime: 4, endTime: 8, color: '#FF2E97', animation: 'chase', speed: 1.0, intensity: 0.85 },
-          { id: 'k13', startTime: 8, endTime: 12, color: '#FFE600', animation: 'blink', speed: 0.6, intensity: 0.75 },
-          { id: 'k14', startTime: 12, endTime: 16, color: '#00F0FF', animation: 'rainbow', speed: 1.5, intensity: 0.9 },
+        { id: 't4', buildingId: 'b6', lightId: 'l6', label: '商务楼B', keyframes: [
+          { id: 'k11', startTime: 0, endTime: 8, color: '#BF40FF', animation: 'blink', speed: 0.7, intensity: 0.75 },
+          { id: 'k12', startTime: 8, endTime: 16, color: '#FFE600', animation: 'breathe', speed: 0.5, intensity: 0.7 },
         ]},
-        { id: 't5', buildingId: 'b7', lightId: 'l7', label: '东塔', keyframes: [
-          { id: 'k15', startTime: 0, endTime: 8, color: '#FF2E97', animation: 'chase', speed: 1.0, intensity: 0.88 },
-          { id: 'k16', startTime: 8, endTime: 16, color: '#00F0FF', animation: 'breathe', speed: 0.7, intensity: 0.8 },
+        { id: 't5', buildingId: 'b8', lightId: 'l8', label: '商务楼C', keyframes: [
+          { id: 'k13', startTime: 0, endTime: 8, color: '#00F0FF', animation: 'gradient', speed: 0.9, intensity: 0.8 },
+          { id: 'k14', startTime: 8, endTime: 16, color: '#FF2E97', animation: 'chase', speed: 0.7, intensity: 0.75 },
         ]},
       ],
     },
@@ -74,7 +76,10 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'b5', type: 'residential', x: 380, y: 280, width: 100, height: 220, windowDensity: 55, windowPattern: 'random' },
       { id: 'b6', type: 'tower', x: 500, y: 150, width: 70, height: 350, windowDensity: 82, windowPattern: 'strip' },
       { id: 'b7', type: 'office', x: 590, y: 260, width: 120, height: 240, windowDensity: 68, windowPattern: 'grid' },
-      { id: 'b8', type: 'residential', x: 730, y: 320, width: 100, height: 180, windowDensity: 50, windowPattern: 'random' },
+      { id: 'b8', type: 'residential', x: 730, y: 320, width: 100, height: 180, windowDensity: 50, windowPattern: 'random', groupId: 'g1' },
+    ],
+    groups: [
+      { id: 'g1', name: '江畔住宅区', childBuildingIds: ['b1', 'b5', 'b8'], pivotX: 380, pivotY: 400, locked: false },
     ],
     lights: [
       { id: 'l1', buildingId: 'b1', color: '#39FF14', animation: 'breathe', speed: 0.5, intensity: 0.6, delay: 0 },
@@ -133,7 +138,10 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'b5', type: 'residential', x: 490, y: 300, width: 100, height: 200, windowDensity: 52, windowPattern: 'strip' },
       { id: 'b6', type: 'residential', x: 610, y: 350, width: 85, height: 150, windowDensity: 48, windowPattern: 'random' },
       { id: 'b7', type: 'office', x: 710, y: 240, width: 100, height: 260, windowDensity: 70, windowPattern: 'grid' },
-      { id: 'b8', type: 'residential', x: 830, y: 310, width: 95, height: 190, windowDensity: 42, windowPattern: 'random' },
+      { id: 'b8', type: 'residential', x: 830, y: 310, width: 95, height: 190, windowDensity: 42, windowPattern: 'random', groupId: 'g1' },
+    ],
+    groups: [
+      { id: 'g1', name: '街区住宅群', childBuildingIds: ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b8'], pivotX: 430, pivotY: 420, locked: false },
     ],
     lights: [
       { id: 'l1', buildingId: 'b1', color: '#FFE600', animation: 'blink', speed: 0.4, intensity: 0.55, delay: 0 },
@@ -190,6 +198,9 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'b6', type: 'residential', x: 530, y: 350, width: 90, height: 150, windowDensity: 45, windowPattern: 'random' },
       { id: 'b7', type: 'tower', x: 640, y: 30, width: 80, height: 470, windowDensity: 94, windowPattern: 'grid' },
       { id: 'b8', type: 'office', x: 740, y: 300, width: 110, height: 200, windowDensity: 65, windowPattern: 'strip' },
+    ],
+    groups: [
+      { id: 'g1', name: '地标塔楼群', childBuildingIds: ['b1', 'b3', 'b5', 'b7'], pivotX: 370, pivotY: 300, locked: false },
     ],
     lights: [
       { id: 'l1', buildingId: 'b1', color: '#FF2E97', animation: 'rainbow', speed: 1.0, intensity: 0.95, delay: 0 },

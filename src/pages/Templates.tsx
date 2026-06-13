@@ -53,6 +53,7 @@ export default function Templates() {
       id: template.id,
       name: template.name,
       buildings: template.buildings,
+      groups: template.groups,
       lights: template.lights,
       timeline: template.timeline,
       updatedAt: template.createdAt,

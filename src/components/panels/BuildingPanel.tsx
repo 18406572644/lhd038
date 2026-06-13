@@ -1,5 +1,6 @@
 import { Stack, Text, Select, NumberInput, Slider, Button, Group } from '@mantine/core';
-import { Trash2 } from 'lucide-react';
+import { notifications } from '@mantine/notifications';
+import { Trash2, Copy } from 'lucide-react';
 import { useDesignStore } from '@/store/useDesignStore';
 import { BuildingType, WindowPattern } from '@/types';
 import { NEON_PINK, DARK_PURPLE, DARK_GRAY, DEEP_BLACK, ELECTRIC_BLUE } from '@/utils/colors';
@@ -22,6 +23,62 @@ export default function BuildingPanel() {
   const buildings = useDesignStore((s) => s.buildings);
   const updateBuilding = useDesignStore((s) => s.updateBuilding);
   const removeBuilding = useDesignStore((s) => s.removeBuilding);
+  const copyBuilding = useDesignStore((s) => s.copyBuilding);
+  const pasteBuilding = useDesignStore((s) => s.pasteBuilding);
+  const clipboard = useDesignStore((s) => s.clipboard);
+
+  const handleCopy = () => {
+    if (selectedBuildingId) {
+      copyBuilding(selectedBuildingId);
+      notifications.show({
+        title: '已复制',
+        message: '建筑已复制到剪贴板',
+        color: 'cyan',
+        autoClose: 2000,
+        icon: <Copy size={16} />,
+        styles: {
+          root: {
+            backgroundColor: '#0A0A14',
+            borderColor: ELECTRIC_BLUE,
+          },
+          title: {
+            color: ELECTRIC_BLUE,
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: 600,
+          },
+          description: {
+            color: '#B0B0C0',
+          },
+        },
+      });
+    }
+  };
+
+  const handlePaste = () => {
+    if (clipboard) {
+      pasteBuilding();
+      notifications.show({
+        title: '已粘贴',
+        message: '建筑粘贴成功',
+        color: 'pink',
+        autoClose: 2000,
+        styles: {
+          root: {
+            backgroundColor: '#0A0A14',
+            borderColor: NEON_PINK,
+          },
+          title: {
+            color: NEON_PINK,
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: 600,
+          },
+          description: {
+            color: '#B0B0C0',
+          },
+        },
+      });
+    }
+  };
 
   const selectedBuilding = buildings.find((b) => b.id === selectedBuildingId);
 
@@ -268,6 +325,52 @@ export default function BuildingPanel() {
           styles={selectStyles}
           size="sm"
         />
+
+        <Group grow mt="md">
+          <Button
+            leftSection={<Copy size={14} />}
+            variant="outline"
+            onClick={handleCopy}
+            style={{
+              borderColor: 'rgba(0, 240, 255, 0.5)',
+              color: '#00F0FF',
+              backgroundColor: 'rgba(0, 240, 255, 0.08)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
+              e.currentTarget.style.boxShadow = '0 0 12px rgba(0, 240, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.08)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            复制
+          </Button>
+          <Button
+            leftSection={<Copy size={14} />}
+            variant="outline"
+            onClick={handlePaste}
+            disabled={!clipboard}
+            style={{
+              borderColor: clipboard ? 'rgba(191, 64, 255, 0.5)' : 'rgba(100, 100, 100, 0.3)',
+              color: clipboard ? '#BF40FF' : 'rgba(100, 100, 100, 0.5)',
+              backgroundColor: clipboard ? 'rgba(191, 64, 255, 0.08)' : 'rgba(50, 50, 50, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              if (clipboard) {
+                e.currentTarget.style.backgroundColor = 'rgba(191, 64, 255, 0.2)';
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(191, 64, 255, 0.3)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = clipboard ? 'rgba(191, 64, 255, 0.08)' : 'rgba(50, 50, 50, 0.3)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            粘贴
+          </Button>
+        </Group>
 
         <Button
           leftSection={<Trash2 size={14} />}

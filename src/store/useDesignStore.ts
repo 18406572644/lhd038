@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { Building, LightConfig, UserDesign } from '@/types';
 
+interface ClipboardData {
+  building: Building;
+  lights: LightConfig[];
+}
+
 interface DesignState {
   designId: string;
   designName: string;
@@ -9,6 +14,7 @@ interface DesignState {
   selectedBuildingId: string | null;
   selectedLightId: string | null;
   isDirty: boolean;
+  clipboard: ClipboardData | null;
 
   setDesignName: (name: string) => void;
   addBuilding: (building: Building) => void;
@@ -22,9 +28,11 @@ interface DesignState {
   loadDesign: (design: UserDesign) => void;
   newDesign: () => void;
   markClean: () => void;
+  copyBuilding: (id: string) => void;
+  pasteBuilding: () => void;
 }
 
-export const useDesignStore = create<DesignState>((set) => ({
+export const useDesignStore = create<DesignState>((set, get) => ({
   designId: crypto.randomUUID(),
   designName: '',
   buildings: [],
@@ -32,6 +40,7 @@ export const useDesignStore = create<DesignState>((set) => ({
   selectedBuildingId: null,
   selectedLightId: null,
   isDirty: false,
+  clipboard: null,
 
   setDesignName: (name) => set({ designName: name, isDirty: true }),
 
@@ -95,4 +104,40 @@ export const useDesignStore = create<DesignState>((set) => ({
     }),
 
   markClean: () => set({ isDirty: false }),
+
+  copyBuilding: (id) => {
+    const { buildings, lights } = get();
+    const building = buildings.find((b) => b.id === id);
+    if (!building) return;
+    const buildingLights = lights.filter((l) => l.buildingId === id);
+    set({ clipboard: { building, lights: buildingLights } });
+  },
+
+  pasteBuilding: () => {
+    const { clipboard } = get();
+    if (!clipboard) return;
+
+    const newBuildingId = crypto.randomUUID();
+    const PASTE_OFFSET = 40;
+
+    const newBuilding: Building = {
+      ...clipboard.building,
+      id: newBuildingId,
+      x: clipboard.building.x + PASTE_OFFSET,
+      y: clipboard.building.y + PASTE_OFFSET,
+    };
+
+    const newLights: LightConfig[] = clipboard.lights.map((light) => ({
+      ...light,
+      id: crypto.randomUUID(),
+      buildingId: newBuildingId,
+    }));
+
+    set((state) => ({
+      buildings: [...state.buildings, newBuilding],
+      lights: [...state.lights, ...newLights],
+      selectedBuildingId: newBuildingId,
+      isDirty: true,
+    }));
+  },
 }));

@@ -1,0 +1,88 @@
+@import '@mantine/core/styles.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+body {
+  background-color: #0A0A14;
+  color: #ffffff;
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(30, 30, 46, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 46, 151, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@layer utilities {
+  .glow-pink {
+    box-shadow: 0 0 8px rgba(255, 46, 151, 0.5), 0 0 16px rgba(255, 46, 151, 0.3);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.5), 0 0 16px rgba(0, 240, 255, 0.3);
+  }
+
+  .text-glow-pink {
+    text-shadow: 0 0 6px rgba(255, 46, 151, 0.6), 0 0 12px rgba(255, 46, 151, 0.3);
+  }
+
+  .text-glow-blue {
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.6), 0 0 12px rgba(0, 240, 255, 0.3);
+  }
+
+  .border-glow-pink {
+    border-color: rgba(255, 46, 151, 0.5);
+    box-shadow: 0 0 8px rgba(255, 46, 151, 0.3), inset 0 0 8px rgba(255, 46, 151, 0.1);
+  }
+
+  .border-glow-blue {
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3), inset 0 0 8px rgba(0, 240, 255, 0.1);
+  }
+
+  .font-orbitron {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .font-rajdhani {
+    font-family: 'Rajdhani', sans-serif;
+  }
+}

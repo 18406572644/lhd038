@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Text, Button, Group } from '@mantine/core';
-import { Plus } from 'lucide-react';
+import { Text, Button, Group, Menu } from '@mantine/core';
+import { Plus, ChevronDown } from 'lucide-react';
 import TrackRow from './TrackRow';
 import PlaybackControls from './PlaybackControls';
 import { useTimelineStore } from '@/store/useTimelineStore';
-import { NEON_PINK, ELECTRIC_BLUE, DEEP_BLACK, DARK_PURPLE, withAlpha } from '@/utils/colors';
-import { TimelineTrack, AnimationType } from '@/types';
+import { useDesignStore } from '@/store/useDesignStore';
+import { NEON_PINK, ELECTRIC_BLUE, DEEP_BLACK, DARK_PURPLE, withAlpha, NEON_YELLOW } from '@/utils/colors';
+import { TimelineTrack, AnimationType, Keyframe } from '@/types';
 
 interface TimelineEditorProps {
   height?: number;
@@ -17,10 +18,12 @@ export default function TimelineEditor({ height = 280, onResize }: TimelineEdito
   const timeline = useTimelineStore((s) => s.timeline);
   const addTrack = useTimelineStore((s) => s.addTrack);
   const updateKeyframe = useTimelineStore((s) => s.updateKeyframe);
+  const lightGroups = useDesignStore((s) => s.lightGroups);
 
   const [selectedKeyframeId, setSelectedKeyframeId] = useState<string | null>(null);
   const [editorHeight, setEditorHeight] = useState(height);
   const [isResizing, setIsResizing] = useState(false);
+  const [menuOpened, setMenuOpened] = useState(false);
 
   const tracksContainerRef = useRef<HTMLDivElement>(null);
   const trackAreaRef = useRef<HTMLDivElement>(null);
@@ -92,34 +95,101 @@ export default function TimelineEditor({ height = 280, onResize }: TimelineEdito
     });
   };
 
-  const handleAddTrack = () => {
+  const createDefaultKeyframes = (): Keyframe[] => [
+    {
+      id: crypto.randomUUID(),
+      startTime: 0,
+      endTime: 2,
+      color: NEON_PINK,
+      animation: 'breathe' as AnimationType,
+      speed: 1,
+      intensity: 1,
+    },
+    {
+      id: crypto.randomUUID(),
+      startTime: 4,
+      endTime: 6,
+      color: ELECTRIC_BLUE,
+      animation: 'chase' as AnimationType,
+      speed: 1.5,
+      intensity: 0.8,
+    },
+  ];
+
+  const handleAddBuildingTrack = () => {
     const newTrack: TimelineTrack = {
       id: crypto.randomUUID(),
       buildingId: '',
       lightId: '',
-      label: `轨道 ${timeline.tracks.length + 1}`,
+      label: `建筑轨道 ${timeline.tracks.length + 1}`,
+      keyframes: createDefaultKeyframes(),
+    };
+    addTrack(newTrack);
+    setMenuOpened(false);
+  };
+
+  const handleAddGroupTrack = () => {
+    const newTrack: TimelineTrack = {
+      id: crypto.randomUUID(),
+      groupId: '',
+      lightId: '',
+      label: `群组轨道 ${timeline.tracks.length + 1}`,
+      keyframes: createDefaultKeyframes(),
+    };
+    addTrack(newTrack);
+    setMenuOpened(false);
+  };
+
+  const handleAddLightGroupTrack = () => {
+    if (lightGroups.length === 0) return;
+    const lightGroup = lightGroups[0];
+    const newTrack: TimelineTrack = {
+      id: crypto.randomUUID(),
+      lightGroupId: lightGroup.id,
+      lightId: '',
+      label: `${lightGroup.name}`,
       keyframes: [
         {
           id: crypto.randomUUID(),
           startTime: 0,
-          endTime: 2,
-          color: NEON_PINK,
-          animation: 'breathe' as AnimationType,
-          speed: 1,
-          intensity: 1,
-        },
-        {
-          id: crypto.randomUUID(),
-          startTime: 4,
-          endTime: 6,
-          color: ELECTRIC_BLUE,
-          animation: 'chase' as AnimationType,
-          speed: 1.5,
-          intensity: 0.8,
+          endTime: 3,
+          color: lightGroup.color,
+          animation: lightGroup.animation,
+          speed: lightGroup.speed,
+          intensity: lightGroup.intensity,
+          delay: lightGroup.delay,
+          overrideMode: lightGroup.overrideMode,
         },
       ],
     };
     addTrack(newTrack);
+    setMenuOpened(false);
+  };
+
+  const handleAddLightGroupTrackForSpecific = (lightGroupId: string) => {
+    const lightGroup = lightGroups.find((g) => g.id === lightGroupId);
+    if (!lightGroup) return;
+    const newTrack: TimelineTrack = {
+      id: crypto.randomUUID(),
+      lightGroupId: lightGroup.id,
+      lightId: '',
+      label: `${lightGroup.name}`,
+      keyframes: [
+        {
+          id: crypto.randomUUID(),
+          startTime: 0,
+          endTime: 3,
+          color: lightGroup.color,
+          animation: lightGroup.animation,
+          speed: lightGroup.speed,
+          intensity: lightGroup.intensity,
+          delay: lightGroup.delay,
+          overrideMode: lightGroup.overrideMode,
+        },
+      ],
+    };
+    addTrack(newTrack);
+    setMenuOpened(false);
   };
 
   const rulerHeight = 28;
@@ -195,27 +265,100 @@ export default function TimelineEditor({ height = 280, onResize }: TimelineEdito
           </Text>
         </Group>
 
-        <Button
-          size="xs"
-          variant="outline"
-          leftSection={<Plus size={14} />}
-          onClick={handleAddTrack}
-          style={{
-            borderColor: withAlpha(NEON_PINK, 0.5),
-            color: NEON_PINK,
-            backgroundColor: withAlpha(NEON_PINK, 0.08),
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = withAlpha(NEON_PINK, 0.15);
-            e.currentTarget.style.boxShadow = `0 0 10px ${withAlpha(NEON_PINK, 0.3)}`;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = withAlpha(NEON_PINK, 0.08);
-            e.currentTarget.style.boxShadow = 'none';
-          }}
+        <Menu
+          opened={menuOpened}
+          onChange={setMenuOpened}
+          position="top-end"
+          withinPortal
+          shadow="xl"
         >
-          添加轨道
-        </Button>
+          <Menu.Target>
+            <Button
+              size="xs"
+              variant="outline"
+              leftSection={<Plus size={14} />}
+              rightSection={<ChevronDown size={12} />}
+              style={{
+                borderColor: withAlpha(NEON_PINK, 0.5),
+                color: NEON_PINK,
+                backgroundColor: withAlpha(NEON_PINK, 0.08),
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = withAlpha(NEON_PINK, 0.15);
+                e.currentTarget.style.boxShadow = `0 0 10px ${withAlpha(NEON_PINK, 0.3)}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = withAlpha(NEON_PINK, 0.08);
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              添加轨道
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown
+            style={{
+              backgroundColor: '#0A0A14',
+              borderColor: 'rgba(0, 240, 255, 0.3)',
+              minWidth: 200,
+            }}
+          >
+            <Menu.Item
+              onClick={handleAddBuildingTrack}
+              leftSection={<div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: ELECTRIC_BLUE }} />}
+            >
+              <Text size="sm">建筑轨道</Text>
+              <Text size="xs" c="dimmed">控制单栋建筑灯光</Text>
+            </Menu.Item>
+            <Menu.Item
+              onClick={handleAddGroupTrack}
+              leftSection={<div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: NEON_YELLOW }} />}
+            >
+              <Text size="sm">群组轨道</Text>
+              <Text size="xs" c="dimmed">控制建筑组（空间组）</Text>
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Label c={NEON_PINK}>灯光群组轨道</Menu.Label>
+            {lightGroups.length === 0 ? (
+              <Menu.Item disabled>
+                <Text size="xs" c="dimmed">请先创建灯光分组</Text>
+              </Menu.Item>
+            ) : (
+              lightGroups.map((lg) => (
+                <Menu.Item
+                  key={lg.id}
+                  onClick={() => handleAddLightGroupTrackForSpecific(lg.id)}
+                  leftSection={
+                    <div
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: lg.color,
+                        boxShadow: `0 0 6px ${lg.color}`,
+                      }}
+                    />
+                  }
+                >
+                  <Text size="sm">{lg.name}</Text>
+                  <Text size="xs" c="dimmed">
+                    {lg.buildingIds.length} 栋 · {lg.overrideMode === 'replace' ? '替换' : lg.overrideMode === 'multiply' ? '乘法' : '偏移'}
+                  </Text>
+                </Menu.Item>
+              ))
+            )}
+            {lightGroups.length > 0 && (
+              <>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={handleAddLightGroupTrack}
+                  leftSection={<Plus size={14} style={{ color: NEON_PINK }} />}
+                >
+                  <Text size="sm" c={NEON_PINK}>新建灯光群组轨道</Text>
+                </Menu.Item>
+              </>
+            )}
+          </Menu.Dropdown>
+        </Menu>
       </div>
 
       <div

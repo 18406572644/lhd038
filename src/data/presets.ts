@@ -31,6 +31,7 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'l7', buildingId: 'b7', color: '#FF2E97', animation: 'chase', speed: 1.0, intensity: 0.88, delay: 0.2 },
       { id: 'l8', buildingId: 'b8', color: '#00F0FF', animation: 'gradient', speed: 0.9, intensity: 0.8, delay: 1.2 },
     ],
+    lightGroups: [],
     timeline: {
       duration: 16,
       tracks: [
@@ -91,6 +92,7 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'l7', buildingId: 'b7', color: '#00F0FF', animation: 'gradient', speed: 0.7, intensity: 0.75, delay: 0.8 },
       { id: 'l8', buildingId: 'b8', color: '#FF6B2B', animation: 'breathe', speed: 0.4, intensity: 0.55, delay: 1.0 },
     ],
+    lightGroups: [],
     timeline: {
       duration: 20,
       tracks: [
@@ -153,6 +155,7 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'l7', buildingId: 'b7', color: '#00F0FF', animation: 'chase', speed: 0.9, intensity: 0.75, delay: 0.2 },
       { id: 'l8', buildingId: 'b8', color: '#BF40FF', animation: 'breathe', speed: 0.5, intensity: 0.48, delay: 0.6 },
     ],
+    lightGroups: [],
     timeline: {
       duration: 12,
       tracks: [
@@ -212,6 +215,7 @@ export const presetTemplates: LightShowTemplate[] = [
       { id: 'l7', buildingId: 'b7', color: '#00F0FF', animation: 'rainbow', speed: 1.8, intensity: 0.98, delay: 0 },
       { id: 'l8', buildingId: 'b8', color: '#FF6B2B', animation: 'chase', speed: 0.7, intensity: 0.7, delay: 0.6 },
     ],
+    lightGroups: [],
     timeline: {
       duration: 24,
       tracks: [

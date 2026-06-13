@@ -8,6 +8,7 @@ import BuildingRenderer from '@/components/canvas/BuildingRenderer';
 import Toolbar from '@/components/panels/Toolbar';
 import BuildingPanel from '@/components/panels/BuildingPanel';
 import LightPanel from '@/components/panels/LightPanel';
+import LightGroupManager from '@/components/panels/LightGroupManager';
 import TimelineEditor from '@/components/timeline/TimelineEditor';
 import PreviewModal from '@/components/preview/PreviewModal';
 import ExportPanel from '@/components/preview/ExportPanel';
@@ -32,6 +33,7 @@ export default function Workbench() {
   const buildings = useDesignStore((s) => s.buildings);
   const groups = useDesignStore((s) => s.groups);
   const lights = useDesignStore((s) => s.lights);
+  const lightGroups = useDesignStore((s) => s.lightGroups);
   const loadDesign = useDesignStore((s) => s.loadDesign);
   const setDesignName = useDesignStore((s) => s.setDesignName);
   const isDirty = useDesignStore((s) => s.isDirty);
@@ -55,6 +57,7 @@ export default function Workbench() {
         buildings: tpl.buildings,
         groups: tpl.groups,
         lights: tpl.lights,
+        lightGroups: tpl.lightGroups,
         timeline: tpl.timeline,
         updatedAt: tpl.createdAt,
         createdAt: tpl.createdAt,
@@ -93,6 +96,7 @@ export default function Workbench() {
       buildings,
       groups,
       lights,
+      lightGroups,
       timeline,
       updatedAt: now,
       createdAt: now,
@@ -269,6 +273,7 @@ export default function Workbench() {
 
           <div style={rightPanelStyle}>
             <BuildingPanel />
+            <LightGroupManager />
             <LightPanel />
           </div>
         </div>

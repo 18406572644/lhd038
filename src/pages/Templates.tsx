@@ -55,6 +55,7 @@ export default function Templates() {
       buildings: template.buildings,
       groups: template.groups,
       lights: template.lights,
+      lightGroups: template.lightGroups,
       timeline: template.timeline,
       updatedAt: template.createdAt,
       createdAt: template.createdAt,

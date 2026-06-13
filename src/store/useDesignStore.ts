@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Building, LightConfig, UserDesign, BuildingGroup } from '@/types';
+import { Building, LightConfig, UserDesign, BuildingGroup, LightGroup } from '@/types';
 
 interface ClipboardData {
   building: Building;
@@ -20,10 +20,12 @@ interface DesignState {
   buildings: Building[];
   groups: BuildingGroup[];
   lights: LightConfig[];
+  lightGroups: LightGroup[];
   selectedBuildingId: string | null;
   selectedBuildingIds: string[];
   selectedGroupId: string | null;
   selectedLightId: string | null;
+  selectedLightGroupId: string | null;
   activeGroupId: string | null;
   isDirty: boolean;
   clipboard: ClipboardItem | null;
@@ -51,6 +53,11 @@ interface DesignState {
   updateLight: (id: string, updates: Partial<LightConfig>) => void;
   removeLight: (id: string) => void;
   selectLight: (id: string | null) => void;
+  addLightGroup: (group: LightGroup) => void;
+  updateLightGroup: (id: string, updates: Partial<LightGroup>) => void;
+  removeLightGroup: (id: string) => void;
+  selectLightGroup: (id: string | null) => void;
+  reorderBuildingIdsInLightGroup: (groupId: string, buildingIds: string[]) => void;
   loadDesign: (design: UserDesign) => void;
   newDesign: () => void;
   markClean: () => void;
@@ -66,10 +73,12 @@ export const useDesignStore = create<DesignState>((set, get) => ({
   buildings: [],
   groups: [],
   lights: [],
+  lightGroups: [],
   selectedBuildingId: null,
   selectedBuildingIds: [],
   selectedGroupId: null,
   selectedLightId: null,
+  selectedLightGroupId: null,
   activeGroupId: null,
   isDirty: false,
   clipboard: null,
@@ -130,6 +139,7 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       selectedBuildingIds: [],
       selectedGroupId: null,
       selectedLightId: null,
+      selectedLightGroupId: null,
     }),
 
   addGroup: (group) => set((state) => ({ groups: [...state.groups, group], isDirty: true })),
@@ -304,6 +314,32 @@ export const useDesignStore = create<DesignState>((set, get) => ({
 
   selectLight: (id) => set({ selectedLightId: id }),
 
+  addLightGroup: (group) =>
+    set((state) => ({ lightGroups: [...state.lightGroups, group], isDirty: true })),
+
+  updateLightGroup: (id, updates) =>
+    set((state) => ({
+      lightGroups: state.lightGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+      isDirty: true,
+    })),
+
+  removeLightGroup: (id) =>
+    set((state) => ({
+      lightGroups: state.lightGroups.filter((g) => g.id !== id),
+      selectedLightGroupId: state.selectedLightGroupId === id ? null : state.selectedLightGroupId,
+      isDirty: true,
+    })),
+
+  selectLightGroup: (id) => set({ selectedLightGroupId: id }),
+
+  reorderBuildingIdsInLightGroup: (groupId, buildingIds) =>
+    set((state) => ({
+      lightGroups: state.lightGroups.map((g) =>
+        g.id === groupId ? { ...g, buildingIds } : g
+      ),
+      isDirty: true,
+    })),
+
   loadDesign: (design) =>
     set({
       designId: design.id,
@@ -311,10 +347,12 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       buildings: design.buildings,
       groups: design.groups || [],
       lights: design.lights,
+      lightGroups: design.lightGroups || [],
       selectedBuildingId: null,
       selectedBuildingIds: [],
       selectedGroupId: null,
       selectedLightId: null,
+      selectedLightGroupId: null,
       activeGroupId: null,
       isDirty: false,
     }),
@@ -326,10 +364,12 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       buildings: [],
       groups: [],
       lights: [],
+      lightGroups: [],
       selectedBuildingId: null,
       selectedBuildingIds: [],
       selectedGroupId: null,
       selectedLightId: null,
+      selectedLightGroupId: null,
       activeGroupId: null,
       isDirty: false,
     }),

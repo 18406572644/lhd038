@@ -1,9 +1,10 @@
-import { ActionIcon, Tooltip, Divider } from '@mantine/core';
-import { Building2, Home, Radio, Fence, Layers, ShoppingBag } from 'lucide-react';
+import { ActionIcon, Tooltip, Divider, Menu, Text } from '@mantine/core';
+import { Building2, Home, Radio, Fence, Layers, ShoppingBag, Lightbulb, Plus } from 'lucide-react';
 import { useDesignStore } from '@/store/useDesignStore';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import { BuildingType, BuildingGroup } from '@/types';
-import { hexToRgb } from '@/utils/colors';
+import { BuildingType, LightGroup, OverrideMode } from '@/types';
+import { hexToRgb, NEON_PINK, ELECTRIC_BLUE, NEON_YELLOW } from '@/utils/colors';
+import { notifications } from '@mantine/notifications';
 
 const BUILDING_TYPES: {
   type: BuildingType;
@@ -68,6 +69,10 @@ interface BuildingRendererProps {
 export default function BuildingRenderer({ vertical = false }: BuildingRendererProps) {
   const addBuilding = useDesignStore((s) => s.addBuilding);
   const createGroup = useDesignStore((s) => s.createGroup);
+  const lightGroups = useDesignStore((s) => s.lightGroups);
+  const addLightGroup = useDesignStore((s) => s.addLightGroup);
+  const selectedBuildingIds = useDesignStore((s) => s.selectedBuildingIds);
+  const updateLightGroup = useDesignStore((s) => s.updateLightGroup);
   const canvasWidth = useCanvasStore((s) => s.canvasWidth);
   const canvasHeight = useCanvasStore((s) => s.canvasHeight);
 
@@ -109,6 +114,87 @@ export default function BuildingRenderer({ vertical = false }: BuildingRendererP
     if (buildingIds.length >= 2) {
       createGroup(buildingIds, pg.name);
     }
+  };
+
+  const handleAddSelectedToLightGroup = (lightGroupId: string) => {
+    if (selectedBuildingIds.length === 0) {
+      notifications.show({
+        title: '无法添加',
+        message: '请先在画布上选择建筑',
+        color: 'yellow',
+        autoClose: 2000,
+        styles: {
+          root: { backgroundColor: '#0A0A14', borderColor: NEON_YELLOW },
+          title: { color: NEON_YELLOW, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
+          description: { color: '#B0B0C0' },
+        },
+      });
+      return;
+    }
+    const group = lightGroups.find((g) => g.id === lightGroupId);
+    if (!group) return;
+    const newBuildingIds = [...new Set([...group.buildingIds, ...selectedBuildingIds])];
+    updateLightGroup(lightGroupId, { buildingIds: newBuildingIds });
+    notifications.show({
+      title: '已添加到灯光组',
+      message: `${selectedBuildingIds.length} 栋建筑已添加到 "${group.name}"`,
+      color: 'cyan',
+      autoClose: 2000,
+      styles: {
+        root: { backgroundColor: '#0A0A14', borderColor: ELECTRIC_BLUE },
+        title: { color: ELECTRIC_BLUE, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
+        description: { color: '#B0B0C0' },
+      },
+    });
+  };
+
+  const handleCreateLightGroupFromSelected = () => {
+    if (selectedBuildingIds.length === 0) {
+      notifications.show({
+        title: '无法创建',
+        message: '请先在画布上选择至少 1 栋建筑',
+        color: 'yellow',
+        autoClose: 2000,
+        styles: {
+          root: { backgroundColor: '#0A0A14', borderColor: NEON_YELLOW },
+          title: { color: NEON_YELLOW, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
+          description: { color: '#B0B0C0' },
+        },
+      });
+      return;
+    }
+    const newGroup: LightGroup = {
+      id: crypto.randomUUID(),
+      name: `灯光组 ${lightGroups.length + 1}`,
+      buildingIds: [...selectedBuildingIds],
+      color: NEON_PINK,
+      animation: 'breathe',
+      overrideMode: 'replace',
+      speed: 1,
+      intensity: 0.8,
+      delay: 0,
+    };
+    addLightGroup(newGroup);
+    notifications.show({
+      title: '灯光组已创建',
+      message: `包含 ${selectedBuildingIds.length} 栋建筑`,
+      color: 'pink',
+      autoClose: 2000,
+      styles: {
+        root: { backgroundColor: '#0A0A14', borderColor: NEON_PINK },
+        title: { color: NEON_PINK, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
+        description: { color: '#B0B0C0' },
+      },
+    });
+  };
+
+  const getOverrideModeLabel = (mode: OverrideMode) => {
+    const map: Record<OverrideMode, string> = {
+      replace: '替换',
+      multiply: '乘法',
+      offset: '偏移',
+    };
+    return map[mode];
   };
 
   return (
@@ -183,6 +269,97 @@ export default function BuildingRenderer({ vertical = false }: BuildingRendererP
           </Tooltip>
         );
       })}
+
+      <Divider
+        orientation={vertical ? 'horizontal' : 'vertical'}
+        color="rgba(255, 46, 151, 0.2)"
+        mx={4}
+      />
+
+      <Tooltip
+        label="快速灯光分组"
+        withArrow
+        position={vertical ? 'right' : 'bottom'}
+      >
+        <Menu position={vertical ? 'right' : 'top'} withinPortal shadow="xl" offset={4}>
+          <Menu.Target>
+            <ActionIcon
+              variant="outline"
+              size="lg"
+              style={{
+                borderColor: NEON_PINK,
+                color: NEON_PINK,
+                backgroundColor: 'rgba(26, 26, 40, 0.8)',
+                textShadow: `0 0 6px rgba(255, 46, 151, 0.5)`,
+              }}
+              styles={{
+                root: {
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 46, 151, 0.15)',
+                    boxShadow: '0 0 12px rgba(255, 46, 151, 0.4), 0 0 24px rgba(255, 46, 151, 0.2)',
+                    textShadow: '0 0 10px rgba(255, 46, 151, 0.8)',
+                  },
+                },
+              }}
+            >
+              <Lightbulb size={18} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown
+            style={{
+              backgroundColor: '#0A0A14',
+              borderColor: 'rgba(255, 46, 151, 0.3)',
+              minWidth: 200,
+            }}
+          >
+            <Menu.Item
+              onClick={handleCreateLightGroupFromSelected}
+              leftSection={<Plus size={16} style={{ color: NEON_PINK }} />}
+            >
+              <div>
+                <Text size="sm">从选中建筑创建</Text>
+                <Text size="xs" c="dimmed">
+                  {selectedBuildingIds.length > 0
+                    ? `已选 ${selectedBuildingIds.length} 栋建筑`
+                    : '请先在画布上选择建筑'}
+                </Text>
+              </div>
+            </Menu.Item>
+            {lightGroups.length > 0 && (
+              <>
+                <Menu.Divider />
+                <Menu.Label c={NEON_PINK}>添加到已有分组</Menu.Label>
+                {lightGroups.map((lg) => (
+                  <Menu.Item
+                    key={lg.id}
+                    onClick={() => handleAddSelectedToLightGroup(lg.id)}
+                    leftSection={
+                      <div
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: lg.color,
+                          boxShadow: `0 0 6px ${lg.color}`,
+                        }}
+                      />
+                    }
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <div>
+                        <Text size="sm">{lg.name}</Text>
+                        <Text size="xs" c="dimmed">
+                          {lg.buildingIds.length} 栋 · {getOverrideModeLabel(lg.overrideMode)}
+                        </Text>
+                      </div>
+                    </div>
+                  </Menu.Item>
+                ))}
+              </>
+            )}
+          </Menu.Dropdown>
+        </Menu>
+      </Tooltip>
     </div>
   );
 }

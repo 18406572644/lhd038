@@ -9,6 +9,7 @@ import Toolbar from '@/components/panels/Toolbar';
 import BuildingPanel from '@/components/panels/BuildingPanel';
 import LightPanel from '@/components/panels/LightPanel';
 import LightGroupManager from '@/components/panels/LightGroupManager';
+import ShortcutHelpPanel from '@/components/panels/ShortcutHelpPanel';
 import TimelineEditor from '@/components/timeline/TimelineEditor';
 import PreviewModal from '@/components/preview/PreviewModal';
 import ExportPanel from '@/components/preview/ExportPanel';
@@ -18,6 +19,7 @@ import { DEEP_BLACK, ELECTRIC_BLUE, NEON_PINK, withAlpha } from '@/utils/colors'
 import { presetTemplates } from '@/data/presets';
 import { getDesigns, saveDesignToApi, deleteDesignFromApi } from '@/services/mockApi';
 import { useExport } from '@/hooks/useExport';
+import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys';
 import { UserDesign } from '@/types';
 
 export default function Workbench() {
@@ -77,6 +79,8 @@ export default function Workbench() {
     setSaveName(designName);
     setSaveModalOpen(true);
   };
+
+  useGlobalHotkeys({ onSave: handleSave });
 
   const confirmSave = async () => {
     if (!saveName.trim()) {
@@ -272,6 +276,9 @@ export default function Workbench() {
           </div>
 
           <div style={rightPanelStyle}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <ShortcutHelpPanel />
+            </div>
             <BuildingPanel />
             <LightGroupManager />
             <LightPanel />

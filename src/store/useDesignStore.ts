@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Building, LightConfig, UserDesign, BuildingGroup, LightGroup } from '@/types';
+import { useUndoStore, DesignSnapshot } from '@/store/useUndoStore';
 
 interface ClipboardData {
   building: Building;
@@ -13,6 +14,20 @@ interface GroupClipboardData {
 }
 
 type ClipboardItem = ClipboardData | GroupClipboardData;
+
+function takeSnapshot(state: {
+  buildings: Building[];
+  groups: BuildingGroup[];
+  lights: LightConfig[];
+  lightGroups: LightGroup[];
+}): DesignSnapshot {
+  return {
+    buildings: JSON.parse(JSON.stringify(state.buildings)),
+    groups: JSON.parse(JSON.stringify(state.groups)),
+    lights: JSON.parse(JSON.stringify(state.lights)),
+    lightGroups: JSON.parse(JSON.stringify(state.lightGroups)),
+  };
+}
 
 interface DesignState {
   designId: string;
@@ -65,6 +80,8 @@ interface DesignState {
   pasteBuilding: () => void;
   getBuildingGroup: (buildingId: string) => BuildingGroup | undefined;
   getGroupBuildings: (groupId: string) => Building[];
+  undo: () => void;
+  redo: () => void;
 }
 
 export const useDesignStore = create<DesignState>((set, get) => ({
@@ -86,16 +103,23 @@ export const useDesignStore = create<DesignState>((set, get) => ({
   setDesignName: (name) => set({ designName: name, isDirty: true }),
 
   addBuilding: (building) =>
-    set((state) => ({ buildings: [...state.buildings, building], isDirty: true })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return { buildings: [...state.buildings, building], isDirty: true };
+    }),
 
   updateBuilding: (id, updates) =>
-    set((state) => ({
-      buildings: state.buildings.map((b) => (b.id === id ? { ...b, ...updates } : b)),
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        buildings: state.buildings.map((b) => (b.id === id ? { ...b, ...updates } : b)),
+        isDirty: true,
+      };
+    }),
 
   removeBuilding: (id) =>
     set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
       const building = state.buildings.find((b) => b.id === id);
       let updatedGroups = state.groups;
       if (building?.groupId) {
@@ -142,24 +166,34 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       selectedLightGroupId: null,
     }),
 
-  addGroup: (group) => set((state) => ({ groups: [...state.groups, group], isDirty: true })),
+  addGroup: (group) =>
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return { groups: [...state.groups, group], isDirty: true };
+    }),
 
   updateGroup: (id, updates) =>
-    set((state) => ({
-      groups: state.groups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        groups: state.groups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        isDirty: true,
+      };
+    }),
 
   removeGroup: (id) =>
-    set((state) => ({
-      groups: state.groups.filter((g) => g.id !== id),
-      buildings: state.buildings.map((b) =>
-        b.groupId === id ? { ...b, groupId: undefined } : b
-      ),
-      selectedGroupId: state.selectedGroupId === id ? null : state.selectedGroupId,
-      activeGroupId: state.activeGroupId === id ? null : state.activeGroupId,
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        groups: state.groups.filter((g) => g.id !== id),
+        buildings: state.buildings.map((b) =>
+          b.groupId === id ? { ...b, groupId: undefined } : b
+        ),
+        selectedGroupId: state.selectedGroupId === id ? null : state.selectedGroupId,
+        activeGroupId: state.activeGroupId === id ? null : state.activeGroupId,
+        isDirty: true,
+      };
+    }),
 
   selectGroup: (id) =>
     set({
@@ -172,6 +206,9 @@ export const useDesignStore = create<DesignState>((set, get) => ({
     const { buildings } = get();
     const validIds = buildingIds.filter((id) => buildings.some((b) => b.id === id));
     if (validIds.length < 2) return '';
+
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
 
     const groupBuildings = buildings.filter((b) => validIds.includes(b.id));
     const minX = Math.min(...groupBuildings.map((b) => b.x));
@@ -188,9 +225,9 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       locked: false,
     };
 
-    set((state) => ({
-      groups: [...state.groups, group],
-      buildings: state.buildings.map((b) =>
+    set((s) => ({
+      groups: [...s.groups, group],
+      buildings: s.buildings.map((b) =>
         validIds.includes(b.id) ? { ...b, groupId: group.id } : b
       ),
       selectedGroupId: group.id,
@@ -206,15 +243,18 @@ export const useDesignStore = create<DesignState>((set, get) => ({
     const group = get().groups.find((g) => g.id === groupId);
     if (!group) return;
 
-    set((state) => ({
-      groups: state.groups.filter((g) => g.id !== groupId),
-      buildings: state.buildings.map((b) =>
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+
+    set((s) => ({
+      groups: s.groups.filter((g) => g.id !== groupId),
+      buildings: s.buildings.map((b) =>
         b.groupId === groupId ? { ...b, groupId: undefined } : b
       ),
       selectedBuildingIds: group.childBuildingIds,
       selectedBuildingId: group.childBuildingIds[0] || null,
       selectedGroupId: null,
-      activeGroupId: state.activeGroupId === groupId ? null : state.activeGroupId,
+      activeGroupId: s.activeGroupId === groupId ? null : s.activeGroupId,
       isDirty: true,
     }));
   },
@@ -233,13 +273,16 @@ export const useDesignStore = create<DesignState>((set, get) => ({
     const group = get().groups.find((g) => g.id === groupId);
     if (!group || group.locked) return;
 
-    set((state) => ({
-      buildings: state.buildings.map((b) =>
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+
+    set((s) => ({
+      buildings: s.buildings.map((b) =>
         b.groupId === groupId
           ? { ...b, x: b.x + deltaX, y: b.y + deltaY }
           : b
       ),
-      groups: state.groups.map((g) =>
+      groups: s.groups.map((g) =>
         g.id === groupId
           ? { ...g, pivotX: g.pivotX + deltaX, pivotY: g.pivotY + deltaY }
           : g
@@ -252,8 +295,11 @@ export const useDesignStore = create<DesignState>((set, get) => ({
     const group = get().groups.find((g) => g.id === groupId);
     if (!group || group.locked) return;
 
-    set((state) => ({
-      buildings: state.buildings.map((b) => {
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+
+    set((s) => ({
+      buildings: s.buildings.map((b) => {
         if (b.groupId !== groupId) return b;
         const relX = b.x - group.pivotX;
         const relY = b.y - group.pivotY;
@@ -271,12 +317,15 @@ export const useDesignStore = create<DesignState>((set, get) => ({
     const group = get().groups.find((g) => g.id === groupId);
     if (!group) return;
 
-    set((state) => {
-      const updatedLights = state.lights.map((l) =>
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+
+    set((s) => {
+      const updatedLights = s.lights.map((l) =>
         group.childBuildingIds.includes(l.buildingId) ? { ...l, ...config } : l
       );
 
-      const existingBuildingIds = state.lights.map((l) => l.buildingId);
+      const existingBuildingIds = s.lights.map((l) => l.buildingId);
       const newLights = group.childBuildingIds
         .filter((bid) => !existingBuildingIds.includes(bid))
         .map((bid) => ({
@@ -297,50 +346,72 @@ export const useDesignStore = create<DesignState>((set, get) => ({
   },
 
   addLight: (light) =>
-    set((state) => ({ lights: [...state.lights, light], isDirty: true })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return { lights: [...state.lights, light], isDirty: true };
+    }),
 
   updateLight: (id, updates) =>
-    set((state) => ({
-      lights: state.lights.map((l) => (l.id === id ? { ...l, ...updates } : l)),
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        lights: state.lights.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+        isDirty: true,
+      };
+    }),
 
   removeLight: (id) =>
-    set((state) => ({
-      lights: state.lights.filter((l) => l.id !== id),
-      selectedLightId: state.selectedLightId === id ? null : state.selectedLightId,
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        lights: state.lights.filter((l) => l.id !== id),
+        selectedLightId: state.selectedLightId === id ? null : state.selectedLightId,
+        isDirty: true,
+      };
+    }),
 
   selectLight: (id) => set({ selectedLightId: id }),
 
   addLightGroup: (group) =>
-    set((state) => ({ lightGroups: [...state.lightGroups, group], isDirty: true })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return { lightGroups: [...state.lightGroups, group], isDirty: true };
+    }),
 
   updateLightGroup: (id, updates) =>
-    set((state) => ({
-      lightGroups: state.lightGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        lightGroups: state.lightGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        isDirty: true,
+      };
+    }),
 
   removeLightGroup: (id) =>
-    set((state) => ({
-      lightGroups: state.lightGroups.filter((g) => g.id !== id),
-      selectedLightGroupId: state.selectedLightGroupId === id ? null : state.selectedLightGroupId,
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        lightGroups: state.lightGroups.filter((g) => g.id !== id),
+        selectedLightGroupId: state.selectedLightGroupId === id ? null : state.selectedLightGroupId,
+        isDirty: true,
+      };
+    }),
 
   selectLightGroup: (id) => set({ selectedLightGroupId: id }),
 
   reorderBuildingIdsInLightGroup: (groupId, buildingIds) =>
-    set((state) => ({
-      lightGroups: state.lightGroups.map((g) =>
-        g.id === groupId ? { ...g, buildingIds } : g
-      ),
-      isDirty: true,
-    })),
+    set((state) => {
+      useUndoStore.getState().pushSnapshot(takeSnapshot(state));
+      return {
+        lightGroups: state.lightGroups.map((g) =>
+          g.id === groupId ? { ...g, buildingIds } : g
+        ),
+        isDirty: true,
+      };
+    }),
 
-  loadDesign: (design) =>
+  loadDesign: (design) => {
+    useUndoStore.getState().clear();
     set({
       designId: design.id,
       designName: design.name,
@@ -355,9 +426,11 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       selectedLightGroupId: null,
       activeGroupId: null,
       isDirty: false,
-    }),
+    });
+  },
 
-  newDesign: () =>
+  newDesign: () => {
+    useUndoStore.getState().clear();
     set({
       designId: Date.now().toString(36),
       designName: '',
@@ -372,7 +445,8 @@ export const useDesignStore = create<DesignState>((set, get) => ({
       selectedLightGroupId: null,
       activeGroupId: null,
       isDirty: false,
-    }),
+    });
+  },
 
   markClean: () => set({ isDirty: false }),
 
@@ -402,6 +476,9 @@ export const useDesignStore = create<DesignState>((set, get) => ({
   pasteBuilding: () => {
     const { clipboard } = get();
     if (!clipboard) return;
+
+    const state = get();
+    useUndoStore.getState().pushSnapshot(takeSnapshot(state));
 
     if ('group' in clipboard) {
       const PASTE_OFFSET = 40;
@@ -435,10 +512,10 @@ export const useDesignStore = create<DesignState>((set, get) => ({
         buildingId: idMap.get(l.buildingId) || l.buildingId,
       }));
 
-      set((state) => ({
-        buildings: [...state.buildings, ...newBuildings],
-        groups: [...state.groups, newGroup],
-        lights: [...state.lights, ...newLights],
+      set((s) => ({
+        buildings: [...s.buildings, ...newBuildings],
+        groups: [...s.groups, newGroup],
+        lights: [...s.lights, ...newLights],
         selectedGroupId: newGroupId,
         isDirty: true,
       }));
@@ -459,9 +536,9 @@ export const useDesignStore = create<DesignState>((set, get) => ({
         buildingId: newBuildingId,
       }));
 
-      set((state) => ({
-        buildings: [...state.buildings, newBuilding],
-        lights: [...state.lights, ...newLights],
+      set((s) => ({
+        buildings: [...s.buildings, newBuilding],
+        lights: [...s.lights, ...newLights],
         selectedBuildingId: newBuildingId,
         isDirty: true,
       }));
@@ -476,5 +553,29 @@ export const useDesignStore = create<DesignState>((set, get) => ({
 
   getGroupBuildings: (groupId) => {
     return get().buildings.filter((b) => b.groupId === groupId);
+  },
+
+  undo: () => {
+    const snapshot = useUndoStore.getState().undo();
+    if (!snapshot) return;
+    set({
+      buildings: snapshot.buildings,
+      groups: snapshot.groups,
+      lights: snapshot.lights,
+      lightGroups: snapshot.lightGroups,
+      isDirty: true,
+    });
+  },
+
+  redo: () => {
+    const snapshot = useUndoStore.getState().redo();
+    if (!snapshot) return;
+    set({
+      buildings: snapshot.buildings,
+      groups: snapshot.groups,
+      lights: snapshot.lights,
+      lightGroups: snapshot.lightGroups,
+      isDirty: true,
+    });
   },
 }));

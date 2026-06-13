@@ -112,7 +112,7 @@ export default function CityCanvas() {
         }
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'g') {
         e.preventDefault();
         if (selectedBuildingIds.length >= 2) {
           const groupId = createGroup(selectedBuildingIds);
@@ -132,41 +132,6 @@ export default function CityCanvas() {
         }
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        if (selectedGroupId || selectedBuildingId) {
-          copyBuilding(selectedGroupId || selectedBuildingId || '');
-          notifications.show({
-            title: '已复制',
-            message: selectedGroupId ? '组已复制到剪贴板' : '建筑已复制到剪贴板',
-            color: 'cyan',
-            autoClose: 2000,
-            icon: <Copy size={16} />,
-            styles: {
-              root: { backgroundColor: '#0A0A14', borderColor: ELECTRIC_BLUE },
-              title: { color: ELECTRIC_BLUE, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
-              description: { color: '#B0B0C0' },
-            },
-          });
-        }
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-        if (clipboard) {
-          pasteBuilding();
-          notifications.show({
-            title: '已粘贴',
-            message: '粘贴成功',
-            color: 'pink',
-            autoClose: 2000,
-            styles: {
-              root: { backgroundColor: '#0A0A14', borderColor: NEON_PINK },
-              title: { color: NEON_PINK, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 },
-              description: { color: '#B0B0C0' },
-            },
-          });
-        }
-      }
-
       if (e.key === 'Escape') {
         if (activeGroupId) {
           exitGroupEditMode();
@@ -174,26 +139,16 @@ export default function CityCanvas() {
           clearSelection();
         }
       }
-
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedBuildingId) {
-          // 删除建筑逻辑可在此添加
-        }
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    selectedBuildingId,
     selectedBuildingIds,
     selectedGroupId,
     activeGroupId,
-    clipboard,
     createGroup,
     ungroup,
-    copyBuilding,
-    pasteBuilding,
     clearSelection,
     exitGroupEditMode,
   ]);

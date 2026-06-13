@@ -242,7 +242,6 @@ export default function CityCanvas() {
     (cx: number, cy: number) => {
       for (let i = buildings.length - 1; i >= 0; i--) {
         if (activeGroupId && buildings[i].groupId !== activeGroupId) continue;
-        if (!activeGroupId && buildings[i].groupId) continue;
         if (isPointInBuilding(cx, cy, buildings[i])) {
           return buildings[i];
         }
@@ -370,9 +369,9 @@ export default function CityCanvas() {
         }
       }
 
-      if (e.shiftKey && !activeGroupId) {
+      if (e.shiftKey) {
         boxSelectionStartRef.current = { x: cx, y: cy };
-        startBoxSelection(cx, cy + (groundY - 500));
+        startBoxSelection(cx, cy);
         startDrag('selection', e.clientX, e.clientY);
         return;
       }
@@ -406,7 +405,7 @@ export default function CityCanvas() {
         updateDrag(e.clientX, e.clientY);
       } else if (dragTarget === 'selection') {
         const { cx, cy } = screenToCanvas(e.clientX, e.clientY);
-        updateBoxSelection(cx, cy + (groundY - 500));
+        updateBoxSelection(cx, cy);
       } else if (dragTarget === 'building' && selectedBuildingId) {
         const { cx, cy } = screenToCanvas(e.clientX, e.clientY);
         const newX = snapToGrid(cx - dragBuildingOffsetRef.current.x);
@@ -443,13 +442,11 @@ export default function CityCanvas() {
   const handleMouseUp = useCallback(() => {
     if (boxSelection.active) {
       const { startX, startY, endX, endY } = boxSelection;
-      const offsetY = groundY - 500;
 
       const selectedIds: string[] = [];
       for (const building of buildings) {
         if (activeGroupId && building.groupId !== activeGroupId) continue;
-        if (!activeGroupId && building.groupId) continue;
-        if (isBuildingInBox(building, startX, startY - offsetY, endX, endY - offsetY)) {
+        if (isBuildingInBox(building, startX, startY, endX, endY)) {
           selectedIds.push(building.id);
         }
       }
@@ -464,7 +461,7 @@ export default function CityCanvas() {
     if (isDragging) {
       endDrag();
     }
-  }, [isDragging, boxSelection, buildings, activeGroupId, selectBuildings, endBoxSelection, endDrag, groundY]);
+  }, [isDragging, boxSelection, buildings, activeGroupId, selectBuildings, endBoxSelection, endDrag]);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLCanvasElement>) => {

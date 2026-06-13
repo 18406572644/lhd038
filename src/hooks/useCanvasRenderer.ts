@@ -50,7 +50,6 @@ export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>)
 
     for (const building of buildings) {
       if (activeGroupId && building.groupId !== activeGroupId) continue;
-      if (!activeGroupId && building.groupId) continue;
 
       const light = lights.find((l) => l.buildingId === building.id);
       const isSelected = building.id === selectedBuildingId;
@@ -93,13 +92,12 @@ export function useCanvasRenderer(canvasRef: React.RefObject<HTMLCanvasElement>)
     }
 
     if (boxSelection.active) {
-      const offsetY = groundY - 500;
       drawBoxSelection(
         ctx,
         boxSelection.startX,
-        boxSelection.startY - offsetY,
+        boxSelection.startY,
         boxSelection.endX,
-        boxSelection.endY - offsetY
+        boxSelection.endY
       );
     }
 
